@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: saltoleto
+  namespace: saltoleto  
+spec:
+  selector:
+    matchLabels:
+      app: saltoleto
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: saltoleto
+        version: v1
+    spec:
+      containers:
+      - name: saltoleto
+        image: saltoleto/argo-cd-hello-world:4a8c90a3d4286ea523e596c315adcc13fa47c726
+        ports:
+        - containerPort: 8085
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: saltoleto-v2
+  namespace: saltoleto  
+spec:
+  selector:
+    matchLabels:
+      app: saltoleto
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: saltoleto
+        version: v2
+    spec:
+      containers:
+      - name: saltoleto
+        image: saltoleto/argo-cd-hello-world:df54ca1011c233b3274e1ef360dc5169f2f4cc33 
+        ports:
+        - containerPort: 8085
+---  
+apiVersion: v1
+kind: Service
+metadata:
+  name: saltoleto
+  namespace: saltoleto
+spec:
+  selector:
+    app: saltoleto
+  ports:
+  - name: http-service
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: saltoleto
+  namespace: saltoleto  
+spec: 
+  hosts:
+  - "*"
+  gateways:
+  - saltoleto
+  http:
+  - name: "root"
+    match:
+    - uri:
+        prefix: "/"
+    route:
+    - destination:
+        host: saltoleto.saltoleto.svc.cluster.local
+        subset: v1
+      weight: 80
+    - destination:
+        host: saltoleto.saltoleto.svc.cluster.local
+        subset: v2
+      weight: 20        
+---      
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: destination-rule
+  namespace: saltoleto
+spec:
+  host: saltoleto.saltoleto.svc.cluster.local
+  subsets:
+  - labels:
+      version: v1
+    name: v1
+  - labels:
+      version: v2
+    name: v2
+---    
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: saltoleto
+  namespace: saltoleto
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"            
