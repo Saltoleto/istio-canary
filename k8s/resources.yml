@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
       - name: saltoleto
-        image: saltoleto/argo-cd-hello-world:e1a0d369db68a9477f3972529b603cfd6b1337c4 
+        image: saltoleto/argo-cd-hello-world:teste 
         ports:
         - containerPort: 8085
 ---  
